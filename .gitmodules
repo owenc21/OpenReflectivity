@@ -1,3 +1,3 @@
-[submodule "zstr"]
-	path = zstr
-	url = https://github.com/mateidavid/zstr.git
+[submodule "extern/googletest"]
+	path = extern/googletest
+	url = https://github.com/google/googletest.git
