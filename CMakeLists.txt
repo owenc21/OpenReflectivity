@@ -4,6 +4,11 @@ project(OpenReflectivity VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Default to Debug build type
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
 # Find OpenGL policy (chose new verses OLD)
 set(OpenGL_GL_PREFERENCE GLVND)
 
@@ -38,6 +43,10 @@ enable_testing()
 
 # Automatically find all test files
 file(GLOB TEST_SOURCES "test/*.cpp")
+
+# Copy the test archives directory to the build directory
+file(COPY ${CMAKE_SOURCE_DIR}/test/archives DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/test/binary DESTINATION ${CMAKE_BINARY_DIR})
 
 # Create a test executable for each test file and link with the project library
 foreach(TEST_SOURCE ${TEST_SOURCES})
