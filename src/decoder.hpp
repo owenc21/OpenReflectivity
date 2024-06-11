@@ -8,6 +8,7 @@
 
 #include <string>
 #include <fstream>
+#include <vector>
 
 #include "lvltwodef.hpp"
 
@@ -17,10 +18,64 @@
 */
 namespace Decoder
 {
+	/**
+	 * @class ArchiveFile
+	 * @brief A class that decompresses a level 2 archive file and acts as a stream for the uncompressed data
+	*/
+	class ArchiveFile{
+	private:
+		bool initialized;
+		std::vector<uint8_t> data; 
+		uint64_t pointer;
+
+		/**
+		 * @brief Decompresses the entire file (if Gzip compressed) into a given out vector
+		 * @param file_name	A string representing the file name of the archive file
+		 * @param out	A reference to a vector to store the decompressed file (bytes)
+		 * @return 0 on success, -1 on any error
+		*/
+		int decompressGzip(const std::string &file_name, std::vector<uint8_t> &out);
+
+		/**
+		 * @brief Decompresses a block of Bzip2 compressed data to a given out vector
+		 * @param compressed_block	Pointer to a buffer of compressed data
+		 * @param size	Size of compressed block in bytes
+		 * @param out	A reference to a vector to store the decompressed block (bytes)
+		 * @return 0 on success, -1 on any error
+		*/
+		int decompressBzip2(const uint8_t *compressed_block, size_t size, std::vector<uint8_t> &out);
+	public:
+	  	/**
+		 * @brief Constructor
+		 * @param file_name String representing name of archive file
+		*/
+	 	ArchiveFile(const std::string &file_name);
+
+		/**
+		 * @brief Reads size number of bytes into buffer, starting from internal pointer
+		 * @param buffer Pointer to a uint8_t buffer of data (assumed to be big enough)
+		 * @param size Number of bytes to read into buffer
+		 * @return Number of bytes read into buffer
+		*/
+		size_t read(uint8_t* buffer, size_t size);
+
+		/**
+		 * @brief Resets the position of the internal pointer
+		 * @param pos New position
+		*/
+		void seek(uint64_t pos);
+
+		/**
+		 * @brief Dumps (binary) contents to a file of the given name
+		 * @param file_name Name of the file to dump contents to
+		*/
+		void dump_to_file(const std::string &file_name);
+	};
 
 	/**
 	 * @brief Decodes a NEXRAD Level 2 archive file, decompressing if necessary
 	 * @param file_name	Name of the NEXRAD Level 2 archieve file
+	 * @param file	A reference of an archive_file struct to hold data from archive file
 	 * @return	Status of decode attempt. See documentation for reference
 	*/
 	int DecodeArchive(const std::string& file_name, archive_file &file);
