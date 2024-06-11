@@ -16,24 +16,27 @@ add_library(open_reflectivity_decoder
   src/decoder.cpp
 )
 
-target_include_directories(open_reflectivity_decoder PUBLIC
-  ${PROJECT_SOURCE_DIR}/include
-  ${PROJECT_SOURCE_DIR}/include/zstr/src
-  ${PROJECT_SOURCE_DIR}/src
-)
-
 # Find packages
 find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 find_package(ZLIB REQUIRED)
+find_package(BZip2 REQUIRED)
+
+target_include_directories(open_reflectivity_decoder PUBLIC
+  ${PROJECT_SOURCE_DIR}/include
+  ${PROJECT_SOURCE_DIR}/src
+  ${ZLIB_INCLUDE_DIRS}
+  ${BZIP2_INCLUDE_DIR}
+)
 
 add_executable(OpenReflectivity src/main.cpp)
 target_link_libraries(OpenReflectivity PRIVATE
   open_reflectivity_decoder
   ${GLFW_LIBRARIES}
   ${OPENGL_gl_LIBRARY}
-  ZLIB::ZLIB
+  ${ZLIB_LIBRARIES}
+  ${BZIP2_LIBRARIES}
 )
 
 # Add Google Test from local extern directory

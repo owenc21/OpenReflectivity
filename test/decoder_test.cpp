@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include <iostream>
+#include <string>
 
 #include "decoder.hpp"
+#include "lvltwodef.hpp"
 
 // Tests reversing endianness of one-byte data types
 TEST(ReverseEndianTest, HandlesOneByte){
@@ -51,4 +53,13 @@ TEST(ReverseEndianTest, HandlesEightByte){
 	EXPECT_EQ(0x1001101001101001, reverseTwo) << "Expected: " << std::hex << 0x1001101001101001 << " but Got: " << reverseTwo;
 	uint64_t reverseFive = Decoder::reverseEndian<uint64_t>(0x0000000000000000);	
 	EXPECT_EQ(0x0000000000000000, reverseFive) << "Expected: " << std::hex << 0x0000000000000000 << " but Got: " << reverseFive << std::dec;
+}
+
+TEST(ParseFile, ParseFileHeader){
+	archive_file file;
+	std::string file_name = "archives/KDIX20240517_025206_V06";
+	Decoder::DecodeArchive(file_name, file);
+	EXPECT_EQ(6, file.header->version) << "Expected: 6 but Got: " << file.header->version;
+	EXPECT_EQ(50, file.header->extension_num) << "Expected: 50 but Got: " << file.header->extension_num;
+	EXPECT_EQ("KDIX", file.header->icao) << "Expected: \"KDIX\" but Got: \"" << file.header->icao << "\"";
 }

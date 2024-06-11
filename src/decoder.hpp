@@ -9,6 +9,8 @@
 #include <string>
 #include <fstream>
 
+#include "lvltwodef.hpp"
+
 /**
  * @namespace Decoder
  * @brief Encapsulate decoding functions and constants
@@ -19,21 +21,9 @@ namespace Decoder
 	/**
 	 * @brief Decodes a NEXRAD Level 2 archive file, decompressing if necessary
 	 * @param file_name	Name of the NEXRAD Level 2 archieve file
+	 * @return	Status of decode attempt. See documentation for reference
 	*/
-	int DecodeFile(const std::string& file_name);
-
-	/**
-	 * @brief Reads a single element of type T from a binary ifstream.
-	 * @tparam T The data type of the element to be read. This type should be trivially copyable.
-	 * @param stream Reference to the input file stream from which to read.
-	 * @return The data read from the stream as an object of type T
-	 */
-	template <typename T>
-	T readBinary(std::ifstream& stream){
-		T data;
-		stream.read(reinterpret_cast<char*>(&data), sizeof(T));
-		return data;
-	}
+	int DecodeArchive(const std::string& file_name, archive_file &file);
 
 	/**
 	 * @brief Reverses the endianness of an arbitrary integral type
