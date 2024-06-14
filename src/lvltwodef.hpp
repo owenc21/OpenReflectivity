@@ -40,3 +40,5 @@ typedef struct {
 typedef struct{
 	std::unique_ptr<volume_header> header;
 } archive_file;
+
+constexpr size_t BZIP2_DECOMPRESS_BUFSIZE = 1000000;

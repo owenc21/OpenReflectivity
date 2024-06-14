@@ -14,7 +14,7 @@
 
 /**
  * @namespace Decoder
- * @brief Encapsulate decoding functions and constants
+ * @brief Encapsulate decoding functions
 */
 namespace Decoder
 {
@@ -44,7 +44,14 @@ namespace Decoder
 		 * @return 0 on success, -1 on any error
 		*/
 		int decompressBzip2(const uint8_t *compressed_block, size_t size, std::vector<uint8_t> &out);
+
 	public:
+		/**
+		 * @brief Tells whether object is initialized
+		 * @returns Internal boolean initialization flag
+		*/
+		bool isInitialized(){ return initialized; }
+
 	  	/**
 		 * @brief Constructor
 		 * @param file_name String representing name of archive file
@@ -58,6 +65,20 @@ namespace Decoder
 		 * @return Number of bytes read into buffer
 		*/
 		size_t read(uint8_t* buffer, size_t size);
+
+		/**
+		 * @brief Reads size number of bytes into buffer, starting from internal pointer
+		 * @param buffer Pointer to a char buffer of data (assumed to be big enough)
+		 * @param size Number of bytes to read into buffer
+		 * @return Number of bytes read into buffer
+		*/
+		size_t read(char* buffer, size_t size);
+
+		/**
+		 * @brief Skips over a given number of bytes by moving the internal pointer by that amount
+		 * @param off Number of bytes to skip
+		*/
+		void ignore(uint64_t off);
 
 		/**
 		 * @brief Resets the position of the internal pointer

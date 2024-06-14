@@ -14,24 +14,23 @@
 
 
 int Decoder::ArchiveFile::decompressGzip(const std::string &file_name, std::vector<uint8_t> &out){
-	std::ifstream file(file_name, std::ios::binary);
-	if(!file.is_open()) return -1;
+	std::ifstream file_check(file_name, std::ios::binary);
+	if(!file_check.is_open()) return -1;
 	
 	// Check if Gzip compressed
 	char magic[2];
-	file.read(magic, 2);
-	file.close();
+	file_check.read(magic, 2);
+	file_check.close();
 
 	out.clear();
+
+	std::ifstream file(file_name, std::ios::binary | std::ios::ate);
+	if(!file.is_open()) return -1;
+	std::streamsize size = file.tellg();
+	file.seekg(0, std::ios::beg);
 	
 	// Gzip compressed
 	if(magic[0] == 0x1f && magic[1] == 0x8b){
-		std::ifstream file(file_name, std::ios::binary | std::ios::ate);
-		if(!file.is_open()) return -1;
-
-		std::streamsize size = file.tellg();
-		file.seekg(0, std::ios::beg);
-
 		std::vector<char> buffer(size);
 		if(!file.read(buffer.data(), size)) return -1;
 
@@ -62,12 +61,6 @@ int Decoder::ArchiveFile::decompressGzip(const std::string &file_name, std::vect
 	}
 	// Uncompressed
 	else{
-		std::ifstream file(file_name, std::ios::binary | std::ios::ate);
-		if(!file) return -1;
-
-		std::streamsize size = file.tellg();
-		file.seekg(0, std::ios::beg);
-
 		out.resize(size);
 		file.read(reinterpret_cast<char*>(out.data()), size);
 		return file.good();
@@ -80,9 +73,9 @@ int Decoder::ArchiveFile::decompressBzip2(const uint8_t *compressed_block, size_
 	stream.avail_in = size;
 
 	out.clear();
-	// 100 KiB should be enough for most blocks... can adjust as needed
-	size_t buf_size = 100000;
-	out.reserve(buf_size);
+
+	size_t buf_size = BZIP2_DECOMPRESS_BUFSIZE;
+	out.resize(buf_size);
 
 	stream.next_out = reinterpret_cast<char*>(out.data());
 	stream.avail_out = buf_size;
@@ -99,17 +92,17 @@ int Decoder::ArchiveFile::decompressBzip2(const uint8_t *compressed_block, size_
 
 		if(bzerr == BZ_STREAM_END) break;
 
-		// If out of buffer space, double
+		// If out of buffer space add another bufsize
 		if(stream.avail_out == 0){
 			size_t cur_size = out.size();
-			out.resize(2 * cur_size);
+			out.resize(cur_size + BZIP2_DECOMPRESS_BUFSIZE);
 			stream.next_out = reinterpret_cast<char*>(out.data()) + cur_size;
 			stream.avail_out = cur_size;
 		}	
 	}
 
 	// Trim off any excess reserved space
-	out.resize(stream.total_out_lo32);
+	out.shrink_to_fit();
 	BZ2_bzDecompressEnd(&stream);
 	return 0;
 }
@@ -142,7 +135,16 @@ Decoder::ArchiveFile::ArchiveFile(const std::string &file_name){
 		}
 	}
 
+	data.shrink_to_fit();
+	pointer = 0;
+
 	initialized = true;
+}
+
+void Decoder::ArchiveFile::ignore(uint64_t off){
+	if(!initialized) return;
+	uint64_t new_pos = off + pointer;
+	if(new_pos >= 0 && new_pos < data.size()) pointer = new_pos;
 }
 
 size_t Decoder::ArchiveFile::read(uint8_t* buffer, size_t size){
@@ -151,16 +153,21 @@ size_t Decoder::ArchiveFile::read(uint8_t* buffer, size_t size){
 	size_t bytes_read = 0;
 
 	while(bytes_read < size && pointer < data.size()){
-		buffer[bytes_read] = data[pointer];
+		*(buffer+bytes_read) = data[pointer];
+		pointer++;
 		bytes_read++;
 	}
 
 	return bytes_read;
 }
 
+size_t Decoder::ArchiveFile::read(char* buffer, size_t size){
+	return read(reinterpret_cast<uint8_t*>(buffer), size);
+}
+
 void Decoder::ArchiveFile::seek(uint64_t pos){
 	if(!initialized) return;
-	if(pos >= 0 || pos < data.size()) pointer = pos;
+	if(pos >= 0 && pos < data.size()) pointer = pos;
 }
 
 void Decoder::ArchiveFile::dump_to_file(const std::string &file_name){
@@ -172,13 +179,9 @@ void Decoder::ArchiveFile::dump_to_file(const std::string &file_name){
 }
 
 int Decoder::DecodeArchive(const std::string &file_name, archive_file &file){
-	std::ifstream archive(file_name, std::ios::binary);
-	if(!archive.is_open()){
-		std::cerr << "Error opening the archive file." << std::endl;
-		return -1;
-	}
-
-	// TODO: check for gzip compression (currently not supported )
+	Decoder::ArchiveFile archive(file_name);
+	bool init = archive.isInitialized();
+	archive.dump_to_file("DECOMP_" + file_name);
 
 	/* Parse the volume header */
 	file.header = std::make_unique<volume_header>();
@@ -216,10 +219,10 @@ int Decoder::DecodeArchive(const std::string &file_name, archive_file &file){
 	archive.read(icao, 4);
 	icao[4] = '\0';
 
-	if(!archive.good()){
-		std::cerr << "An error has occurred while attempting to read the Volume Header." << std::endl;
-		return -1;
-	}
+	// if(!archive.good()){
+	// 	std::cerr << "An error has occurred while attempting to read the Volume Header." << std::endl;
+	// 	return -1;
+	// }
 
 	file.header->version = version;
 	file.header->extension_num = ext_num;
