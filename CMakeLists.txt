@@ -50,6 +50,7 @@ file(GLOB TEST_SOURCES "test/*.cpp")
 # Copy the test archives directory to the build directory
 file(COPY ${CMAKE_SOURCE_DIR}/test/archives DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY ${CMAKE_SOURCE_DIR}/test/binary DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/test/gz2archives DESTINATION ${CMAKE_BINARY_DIR})
 
 # Create a test executable for each test file and link with the project library
 foreach(TEST_SOURCE ${TEST_SOURCES})

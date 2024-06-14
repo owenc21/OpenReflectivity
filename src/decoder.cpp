@@ -18,8 +18,8 @@ int Decoder::ArchiveFile::decompressGzip(const std::string &file_name, std::vect
 	if(!file_check.is_open()) return -1;
 	
 	// Check if Gzip compressed
-	char magic[2];
-	file_check.read(magic, 2);
+	unsigned char magic[2];
+	file_check.read(reinterpret_cast<char*>(magic), 2);
 	file_check.close();
 
 	out.clear();
@@ -44,7 +44,7 @@ int Decoder::ArchiveFile::decompressGzip(const std::string &file_name, std::vect
 		int ret = inflateInit2(&stream, 16+MAX_WBITS);
 		if(ret != Z_OK) return -1;
 
-		do{
+		while(ret != Z_STREAM_END){
 			std::vector<uint8_t> temp(4096);
 			stream.avail_out = temp.size();
 			stream.next_out = temp.data();
@@ -53,13 +53,11 @@ int Decoder::ArchiveFile::decompressGzip(const std::string &file_name, std::vect
 			if(out.size() < stream.total_out){
 				out.insert(out.end(), temp.begin(), temp.begin() + (temp.size() - stream.avail_out));
 			}
-		}while(ret != Z_STREAM_END);
+		}
 
-		inflateEnd(&stream);
-		
+		inflateEnd(&stream);	
 		return ret == Z_STREAM_END;
 	}
-	// Uncompressed
 	else{
 		out.resize(size);
 		file.read(reinterpret_cast<char*>(out.data()), size);
@@ -107,11 +105,18 @@ int Decoder::ArchiveFile::decompressBzip2(const uint8_t *compressed_block, size_
 	return 0;
 }
 
-Decoder::ArchiveFile::ArchiveFile(const std::string &file_name){
+Decoder::ArchiveFile::ArchiveFile(const std::string &file_name, bool gzip, bool bzip){
 	initialized = false;
 	// Decompress entire file (returns original file in vector if uncompressed) into vector
 	std::vector<uint8_t> post_gzip;
-	if(decompressGzip(file_name, post_gzip) < 0) return;
+	if(gzip)
+		if(decompressGzip(file_name, post_gzip) < 0) return;
+
+	if(!bzip){
+		data.reserve(post_gzip.size());
+		data.insert(data.end(), post_gzip.begin(), post_gzip.end());
+		return;
+	}
 
 	// Search for BZip2 compressed blocks
 	for(uint64_t i=0; i<post_gzip.size()-3; i++){
@@ -219,10 +224,6 @@ int Decoder::DecodeArchive(const std::string &file_name, archive_file &file){
 	archive.read(icao, 4);
 	icao[4] = '\0';
 
-	// if(!archive.good()){
-	// 	std::cerr << "An error has occurred while attempting to read the Volume Header." << std::endl;
-	// 	return -1;
-	// }
 
 	file.header->version = version;
 	file.header->extension_num = ext_num;

@@ -47,16 +47,14 @@ namespace Decoder
 
 	public:
 		/**
-		 * @brief Tells whether object is initialized
-		 * @returns Internal boolean initialization flag
+		 * @brief Constructor accepting file name and option of turning off either or both Gzip and Bzip decompression
 		*/
-		bool isInitialized(){ return initialized; }
-
+		ArchiveFile(const std::string &file_name, bool gzip, bool bzip);
 	  	/**
-		 * @brief Constructor
+		 * @brief Constructor only accpeting file name, looking for both Gzip and Bzip2 compression
 		 * @param file_name String representing name of archive file
 		*/
-	 	ArchiveFile(const std::string &file_name);
+	 	ArchiveFile(const std::string &file_name) : ArchiveFile(file_name, true, true) {}
 
 		/**
 		 * @brief Reads size number of bytes into buffer, starting from internal pointer
@@ -91,6 +89,14 @@ namespace Decoder
 		 * @param file_name Name of the file to dump contents to
 		*/
 		void dump_to_file(const std::string &file_name);
+
+		/**
+		 * @brief Tells whether object is initialized
+		 * @returns Internal boolean initialization flag
+		*/
+		bool isInitialized(){ return initialized; }
+
+		size_t size(){ return data.size(); }
 	};
 
 	/**

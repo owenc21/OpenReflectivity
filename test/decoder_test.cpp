@@ -55,6 +55,21 @@ TEST(ReverseEndianTest, HandlesEightByte){
 	EXPECT_EQ(0x0000000000000000, reverseFive) << "Expected: " << std::hex << 0x0000000000000000 << " but Got: " << reverseFive << std::dec;
 }
 
+// Tests successfully decompressing a Gzip-compressed archive file
+TEST(GzipDecompress, DecompressesGzipFile){
+	size_t expected_size = 3619877;
+	Decoder::ArchiveFile file("gz2archives/KDIX20240517_025206_V06.gz", true, false);
+	EXPECT_EQ(expected_size, file.size()) << "Expected: " << expected_size <<" but Got: " << file.size();
+}
+
+// Tests successfully loading a non-Gzip-compressed archive file
+TEST(GzipDecompress, NoDecompressGzipFile){
+	size_t expected_size = 3619877;
+	Decoder::ArchiveFile file("archives/KDIX20240517_025206_V06", true, false);
+	EXPECT_EQ(expected_size, file.size()) << "Expected: " << expected_size <<" but Got: " << file.size();
+}
+
+// Tests successfully parsing header of archive file
 TEST(ParseFile, ParseFileHeader){
 	archive_file file;
 	std::string file_name = "archives/KDIX20240517_025206_V06";
