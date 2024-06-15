@@ -34,7 +34,7 @@ namespace Decoder
 		 * @param out	A reference to a vector to store the decompressed file (bytes)
 		 * @return 0 on success, -1 on any error
 		*/
-		int decompressGzip(const std::string &file_name, std::vector<uint8_t> &out);
+		int decompressGzip(const std::string &file_name, std::vector<uint8_t> &out, const bool &gzip);
 
 		/**
 		 * @brief Decompresses a block of Bzip2 compressed data to a given out vector
@@ -48,8 +48,11 @@ namespace Decoder
 	public:
 		/**
 		 * @brief Constructor accepting file name and option of turning off either or both Gzip and Bzip decompression
+		 * @param file_name	Name of archive file
+		 * @param gzip Whether to attempt to perform Gzip decompression
+		 * @param bzip Whether to attempt to perfrom bzip2 decompression
 		*/
-		ArchiveFile(const std::string &file_name, bool gzip, bool bzip);
+		ArchiveFile(const std::string &file_name, const bool &gzip, const bool &bzip);
 	  	/**
 		 * @brief Constructor only accpeting file name, looking for both Gzip and Bzip2 compression
 		 * @param file_name String representing name of archive file
@@ -103,9 +106,17 @@ namespace Decoder
 	 * @brief Decodes a NEXRAD Level 2 archive file, decompressing if necessary
 	 * @param file_name	Name of the NEXRAD Level 2 archieve file
 	 * @param file	A reference of an archive_file struct to hold data from archive file
-	 * @return	Status of decode attempt. See documentation for reference
+	 * @return	Status of decode attempt. See documentation for reference (TBD)
 	*/
 	int DecodeArchive(const std::string& file_name, archive_file &file);
+
+	/**
+	 * @brief Decodes a NEXRAD Level 2 archive file header into the given volume_header struct
+	 * @param archive A reference to an ArchiveFile object to read from
+	 * @param header A reference to a unique_ptr<volume_header> to write decoded header information to
+	 * @return Status of decode attempt. See documentation for reference (TBD)
+	*/
+	int DecodeHeader(ArchiveFile &archive, std::unique_ptr<volume_header> &header);
 
 	/**
 	 * @brief Reverses the endianness of an arbitrary integral type

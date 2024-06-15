@@ -69,6 +69,13 @@ TEST(GzipDecompress, NoDecompressGzipFile){
 	EXPECT_EQ(expected_size, file.size()) << "Expected: " << expected_size <<" but Got: " << file.size();
 }
 
+// Tests successfully decompressing one block of Bzip2 compression (a compressed archive file)
+TEST(Bzip2Decompress, DecompressOneBlock){
+	size_t expected_size = 3619877;
+	Decoder::ArchiveFile file("bzip2archives/KDIX20240517_025206_V06.prep", false, true);
+	EXPECT_EQ(expected_size, file.size()) << "Expected: " << expected_size <<" but Got: " << file.size();
+}
+
 // Tests successfully parsing header of archive file
 TEST(ParseFile, ParseFileHeader){
 	archive_file file;
