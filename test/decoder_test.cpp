@@ -1,9 +1,30 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <fstream>
 
 #include "decoder.hpp"
 #include "lvltwodef.hpp"
+
+/* Utility Functions */
+std::vector<uint8_t> readBinaryFile(const std::string& path) {
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open the file - '" + path + "'");
+    }
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<uint8_t> buffer(size);
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+        throw std::runtime_error("Error reading the file - '" + path + "'");
+    }
+
+    return buffer;
+}
+/* End Utility Functions */
 
 // Tests reversing endianness of one-byte data types
 TEST(ReverseEndianTest, HandlesOneByte){
@@ -57,23 +78,26 @@ TEST(ReverseEndianTest, HandlesEightByte){
 
 // Tests successfully decompressing a Gzip-compressed archive file
 TEST(GzipDecompress, DecompressesGzipFile){
-	size_t expected_size = 3619877;
 	Decoder::ArchiveFile file("gz2archives/KDIX20240517_025206_V06.gz", true, false);
-	EXPECT_EQ(expected_size, file.size()) << "Expected: " << expected_size <<" but Got: " << file.size();
+	std::vector<uint8_t> decompressed = file.getAll();
+	std::vector<uint8_t> compare = readBinaryFile("archives/KDIX20240517_025206_V06");
+	EXPECT_EQ(decompressed, compare);
 }
 
 // Tests successfully loading a non-Gzip-compressed archive file
 TEST(GzipDecompress, NoDecompressGzipFile){
-	size_t expected_size = 3619877;
 	Decoder::ArchiveFile file("archives/KDIX20240517_025206_V06", true, false);
-	EXPECT_EQ(expected_size, file.size()) << "Expected: " << expected_size <<" but Got: " << file.size();
+	std::vector<uint8_t> decompressed = file.getAll();
+	std::vector<uint8_t> compare = readBinaryFile("archives/KDIX20240517_025206_V06");
+	EXPECT_EQ(decompressed, compare);
 }
 
 // Tests successfully decompressing one block of Bzip2 compression (a compressed archive file)
 TEST(Bzip2Decompress, DecompressOneBlock){
-	size_t expected_size = 3619877;
-	Decoder::ArchiveFile file("bzip2archives/KDIX20240517_025206_V06.prep", false, true);
-	EXPECT_EQ(expected_size, file.size()) << "Expected: " << expected_size <<" but Got: " << file.size();
+	Decoder::ArchiveFile file("bzip2archives/KDIX20240517_025206_V06.bz2", false, true);
+	std::vector<uint8_t> decompressed = file.getAll();
+	std::vector<uint8_t> compare = readBinaryFile("archives/KDIX20240517_025206_V06");
+	EXPECT_EQ(decompressed, compare);
 }
 
 // Tests successfully parsing header of archive file

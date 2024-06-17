@@ -88,7 +88,6 @@ int Decoder::ArchiveFile::decompressBzip2(const uint8_t *compressed_block, size_
 	int bzerr;
 	while(true){
 		bzerr = BZ2_bzDecompress(&stream);
-		out.resize(stream.total_out_lo32);
 
 		if(bzerr == BZ_STREAM_END) break;
 
@@ -97,10 +96,11 @@ int Decoder::ArchiveFile::decompressBzip2(const uint8_t *compressed_block, size_
 			size_t cur_size = out.size();
 			out.resize(cur_size + BZIP2_DECOMPRESS_BUFSIZE);
 			stream.next_out = reinterpret_cast<char*>(out.data()) + cur_size;
-			stream.avail_out = cur_size;
+			stream.avail_out = BZIP2_DECOMPRESS_BUFSIZE;
 		}	
 	}
 
+	out.resize(stream.total_out_lo32);
 	BZ2_bzDecompressEnd(&stream);
 	return 0;
 }

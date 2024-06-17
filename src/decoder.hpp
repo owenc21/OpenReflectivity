@@ -76,6 +76,12 @@ namespace Decoder
 		size_t read(char* buffer, size_t size);
 
 		/**
+		 * @brief Returns the entire buffer of data
+		 * @return Data buffer
+		*/
+		std::vector<uint8_t> getAll(){ return data; }
+
+		/**
 		 * @brief Skips over a given number of bytes by moving the internal pointer by that amount
 		 * @param off Number of bytes to skip
 		*/
