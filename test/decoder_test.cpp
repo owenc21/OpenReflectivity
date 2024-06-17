@@ -94,7 +94,7 @@ TEST(GzipDecompress, NoDecompressGzipFile){
 
 // Tests successfully decompressing one block of Bzip2 compression (a compressed archive file)
 TEST(Bzip2Decompress, DecompressOneBlock){
-	Decoder::ArchiveFile file("bzip2archives/KDIX20240517_025206_V06.bz2", false, true);
+	Decoder::ArchiveFile file("bzip2archives/KDIX20240517_025206_V06.prep", false, true);
 	std::vector<uint8_t> decompressed = file.getAll();
 	std::vector<uint8_t> compare = readBinaryFile("archives/KDIX20240517_025206_V06");
 	EXPECT_EQ(decompressed, compare);
