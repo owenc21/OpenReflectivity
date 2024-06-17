@@ -104,7 +104,7 @@ TEST(Bzip2Decompress, DecompressOneBlock){
 TEST(ParseFile, ParseFileHeader){
 	archive_file file;
 	std::string file_name = "archives/KDIX20240517_025206_V06";
-	Decoder::DecodeArchive(file_name, file);
+	Decoder::DecodeArchive(file_name, false, file);
 	EXPECT_EQ(6, file.header->version) << "Expected: 6 but Got: " << file.header->version;
 	EXPECT_EQ(50, file.header->extension_num) << "Expected: 50 but Got: " << file.header->extension_num;
 	EXPECT_EQ("KDIX", file.header->icao) << "Expected: \"KDIX\" but Got: \"" << file.header->icao << "\"";

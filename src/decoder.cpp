@@ -176,7 +176,7 @@ Decoder::ArchiveFile::ArchiveFile(const std::string &file_name, const bool &gzip
 			data.resize(data.size()-4);
 			data.insert(data.end(), decompressed_block.begin(), decompressed_block.end());
 			data.shrink_to_fit();
-			i += (size + 1);
+			i += size;
 		}
 		else{
 			data.push_back(post_gzip[i]);
@@ -232,11 +232,12 @@ int Decoder::DecodeHeader(ArchiveFile &archive, std::unique_ptr<volume_header> &
 	return 0;
 }
 
-int Decoder::DecodeArchive(const std::string &file_name, archive_file &file){
+int Decoder::DecodeArchive(const std::string &file_name, const bool &dump, archive_file &file){
 	// Decoder::ArchiveFile archive(file_name);
 	Decoder::ArchiveFile archive(file_name);
 	
-	archive.dump_to_file("DECOMP");
+	if(dump)
+		archive.dump_to_file("DECOMP");
 
 	// Parse volume header
 	file.header = std::make_unique<volume_header>();

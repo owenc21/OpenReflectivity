@@ -111,10 +111,11 @@ namespace Decoder
 	/**
 	 * @brief Decodes a NEXRAD Level 2 archive file, decompressing if necessary
 	 * @param file_name	Name of the NEXRAD Level 2 archieve file
+	 * @param dump Whether to dump the decompressed archive file to "./DUMP"
 	 * @param file	A reference of an archive_file struct to hold data from archive file
 	 * @return	Status of decode attempt. See documentation for reference (TBD)
 	*/
-	int DecodeArchive(const std::string& file_name, archive_file &file);
+	int DecodeArchive(const std::string& file_name, const bool &dump, archive_file &file);
 
 	/**
 	 * @brief Decodes a NEXRAD Level 2 archive file header into the given volume_header struct
