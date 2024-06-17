@@ -234,7 +234,7 @@ int Decoder::DecodeHeader(ArchiveFile &archive, std::unique_ptr<volume_header> &
 
 int Decoder::DecodeArchive(const std::string &file_name, archive_file &file){
 	// Decoder::ArchiveFile archive(file_name);
-	Decoder::ArchiveFile archive(file_name, false, true);
+	Decoder::ArchiveFile archive(file_name);
 	
 	archive.dump_to_file("DECOMP");
 
