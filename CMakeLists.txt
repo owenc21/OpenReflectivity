@@ -14,6 +14,7 @@ set(OpenGL_GL_PREFERENCE GLVND)
 
 add_library(open_reflectivity_decoder
   src/decoder.cpp
+  src/archive_file.cpp
 )
 
 # Find packages

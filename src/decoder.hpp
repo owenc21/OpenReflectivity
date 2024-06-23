@@ -76,6 +76,19 @@ namespace Decoder
 		size_t read(char* buffer, size_t size);
 
 		/**
+		 * @brief Reads data into an integral type, based on sizeof type
+		 * @tparam Integral type (unsigned)
+		 * @param buffer Reference to (unsigned) integral type
+		 * @return Number of bytes read into reference 
+		 */
+		template <typename T>
+		size_t readIntegral(T &buffer){
+			size_t bytes_read = read(reinterpret_cast<uint8_t*>(&buffer), sizeof(T));
+			buffer = reverseEndian(buffer);
+			return bytes_read;	
+		}
+
+		/**
 		 * @brief Returns the entire buffer of data
 		 * @return Data buffer
 		*/
@@ -105,6 +118,16 @@ namespace Decoder
 		*/
 		bool isInitialized(){ return initialized; }
 
+		/**
+		 * @brief Tell whether object is at EOF
+		 * @returns Boolean comparison if pointer is at end
+		 */
+		bool at_end(){ return pointer >= data.size(); }
+
+		/**
+		 * @brief Tells object size
+		 * @returns Internal data vector size
+		 */
 		size_t size(){ return data.size(); }
 	};
 
@@ -124,6 +147,14 @@ namespace Decoder
 	 * @return Status of decode attempt. See documentation for reference (TBD)
 	*/
 	int DecodeHeader(ArchiveFile &archive, std::unique_ptr<volume_header> &header);
+
+	/**
+	 * @brief Decodes a NEXRAD Level 2 archtive file metadata record into given metadata_record struct
+	 * @param archive A reference to an ArchiveFile object to read from
+	 * @param header A reference to a unique_ptr<metadata_record> to write decoded information to
+	 * @return Status of decode attempt. See documentation for reference (TBD)
+	 */
+	int DecodeMetadata(ArchiveFile &archive, std::unique_ptr<metadata_record> &metadata);
 
 	/**
 	 * @brief Reverses the endianness of an arbitrary integral type

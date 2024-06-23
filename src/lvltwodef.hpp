@@ -31,6 +31,11 @@ typedef struct {
 	std::string icao;
 } volume_header;
 
+// TODO: add intelligent parsing
+typedef struct {
+	uint8_t data[325888];
+} metadata_record;
+
 /**
  * @struct
  * @brief A struct to hold all relevant information from the NEXRAD Level II archive file
@@ -39,6 +44,7 @@ typedef struct {
 */
 typedef struct{
 	std::unique_ptr<volume_header> header;
+	std::unique_ptr<metadata_record> metadata;
 } archive_file;
 
 constexpr size_t BZIP2_DECOMPRESS_BUFSIZE = 1000000;
