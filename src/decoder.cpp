@@ -65,16 +65,31 @@ int Decoder::DecodeMetadata(ArchiveFile &archive, std::unique_ptr<metadata_recor
 		return -1;
 	}	
 
+	//TODO: Add parsing logic for metadata messages (not top priority)
+
+	return 0;
+}
+
+int Decoder::DecodeMessages(ArchiveFile &archive, archive_file &file){
 	if(archive.at_end()){
 		std::cerr << "Unexpected EOF. Archive is header only." << std::endl;
-		return -2;
+		return -1;
+	}
+
+	// Parse messages until EOF
+	while(!archive.at_end()){
+		// Skip 12 bytes of zeros prepended to all messages (still don't get this)
+		if(!archive.ignore(12))
+			return 0; // I don't think this is an error atm (or even possible)
+		
+		// TODO: read in message header then switch on message type
+
 	}
 
 	return 0;
 }
 
 int Decoder::DecodeArchive(const std::string &file_name, const bool &dump, archive_file &file){
-	// Decoder::ArchiveFile archive(file_name);
 	Decoder::ArchiveFile archive(file_name);
 	
 	if(dump){
@@ -84,11 +99,22 @@ int Decoder::DecodeArchive(const std::string &file_name, const bool &dump, archi
 
 	// Parse volume header
 	file.header = std::make_unique<volume_header>();
-	Decoder::DecodeHeader(archive, file.header);
+	if(Decoder::DecodeHeader(archive, file.header) < 0)
+		return -1;
 
 	// "Parse" metadata record
 	file.metadata = std::make_unique<metadata_record>();
-	Decoder::DecodeMetadata(archive, file.metadata);
+	if(Decoder::DecodeMetadata(archive, file.metadata))
+		return -1;
+
+	// Parse all messages remaining
+	if(Decoder::DecodeMessages(archive, file) < 0)
+		return -1;
+
+	if(!archive.at_end()){
+		std::cerr << "Unexpected non EOF. Decode attempt success unknown. Archive file may be corrupt." << std::endl;
+		return -2;
+	}
 
 	return 0;
 }

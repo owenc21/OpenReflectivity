@@ -27,6 +27,7 @@ namespace Decoder
 		bool initialized;
 		std::vector<uint8_t> data; 
 		uint64_t pointer;
+		uint16_t blocks;
 
 		/**
 		 * @brief Decompresses the entire file (if Gzip compressed) into a given out vector
@@ -97,14 +98,23 @@ namespace Decoder
 		/**
 		 * @brief Skips over a given number of bytes by moving the internal pointer by that amount
 		 * @param off Number of bytes to skip
+		 * @returns Boolean indicator of whether byte skipping was successful
 		*/
-		void ignore(uint64_t off);
+		bool ignore(uint64_t off);
+
+		/**
+		 * @brief Moves back a number of bytes by moving internal pointer by specified amount
+		 * @param off Number of bytes to move back
+		 * @returns Boolean indicator of whether repositioning was successful
+		 */
+		bool back(uint64_t off);
 
 		/**
 		 * @brief Resets the position of the internal pointer
 		 * @param pos New position
+		 * @returns Boolean indicator of whteher seek was successful
 		*/
-		void seek(uint64_t pos);
+		bool seek(uint64_t pos);
 
 		/**
 		 * @brief Dumps (binary) contents to a file of the given name
@@ -129,6 +139,12 @@ namespace Decoder
 		 * @returns Internal data vector size
 		 */
 		size_t size(){ return data.size(); }
+
+		/**
+		 * @brief Tells number of BZIP2 blocks decompressed
+		 * @returns Internal count of decomressed BZIP2 blocks
+		 */
+		uint16_t num_blocks(){ return blocks; }
 	};
 
 	/**
@@ -155,6 +171,14 @@ namespace Decoder
 	 * @return Status of decode attempt. See documentation for reference (TBD)
 	 */
 	int DecodeMetadata(ArchiveFile &archive, std::unique_ptr<metadata_record> &metadata);
+
+	/**
+	 * @brief Decodes non-metadata messages in archive file, recording data from select messages
+	 * @param archive A reference to an ArchiveFile object to read from
+	 * @param file A reference to an archive_file struct to write decoded information to
+	 * @return Status of decode attempt. See documentation for reference (TBD)
+	 */
+	int DecodeMessages(ArchiveFile &archive, archive_file &file);
 
 	/**
 	 * @brief Reverses the endianness of an arbitrary integral type

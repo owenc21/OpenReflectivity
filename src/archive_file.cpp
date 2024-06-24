@@ -103,10 +103,27 @@ int Decoder::ArchiveFile::decompressBzip2(const uint8_t *compressed_block, size_
 	return 0;
 }
 
-void Decoder::ArchiveFile::ignore(uint64_t off){
-	if(!initialized) return;
+bool Decoder::ArchiveFile::ignore(uint64_t off){
+	if(!initialized) return false;
 	uint64_t new_pos = off + pointer;
-	if(new_pos >= 0 && new_pos < data.size()) pointer = new_pos;
+	if(!(new_pos >= 0 && new_pos < data.size())) return false;
+	pointer = new_pos;
+	return true;
+}
+
+bool Decoder::ArchiveFile::back(uint64_t off){
+	if(!initialized) return false;
+	uint64_t new_pos = pointer - off;
+	if(!(new_pos >= 0 && new_pos < data.size())) return false;
+	pointer = new_pos;
+	return true;
+}
+
+bool Decoder::ArchiveFile::seek(uint64_t pos){
+	if(!initialized) return false;
+	if(!(pos >= 0 && pos < data.size())) return false;
+	pointer = pos;
+	return true;
 }
 
 size_t Decoder::ArchiveFile::read(uint8_t* buffer, size_t size){
@@ -125,11 +142,6 @@ size_t Decoder::ArchiveFile::read(uint8_t* buffer, size_t size){
 
 size_t Decoder::ArchiveFile::read(char* buffer, size_t size){
 	return read(reinterpret_cast<uint8_t*>(buffer), size);
-}
-
-void Decoder::ArchiveFile::seek(uint64_t pos){
-	if(!initialized) return;
-	if(pos >= 0 && pos < data.size()) pointer = pos;
 }
 
 void Decoder::ArchiveFile::dump_to_file(const std::string &file_name){
@@ -156,11 +168,11 @@ Decoder::ArchiveFile::ArchiveFile(const std::string &file_name, const bool &gzip
 
 	// Search for BZip2 compressed blocks
 	// This could be made quicker by identifying where the blocks are located and then doing the decompression in parallel
-	int xy = 0;
+	blocks = 0;
 	for(uint64_t i=0; i<post_gzip.size()-3; i++){
 		// format for block is 4-byte signed integer of size of block, BZhx where x is the compression block size. the compressed block follows
 		if(post_gzip[i] == 'B' && post_gzip[i+1] == 'Z' && post_gzip[i+2] == 'h' && post_gzip[i+3] >= '1' && post_gzip[i+3] <= '9'){
-			xy++;
+			blocks++;
 
 			std::vector<uint8_t> decompressed_block;
 			int compressed_size(
@@ -179,7 +191,7 @@ Decoder::ArchiveFile::ArchiveFile(const std::string &file_name, const bool &gzip
 			data.shrink_to_fit();
 			i += size;
 
-			std::string dump = "blocks/BLOCK_DUMP" + std::to_string(xy);
+			std::string dump = "blocks/BLOCK_DUMP" + std::to_string(blocks);
 			std::ofstream out(dump, std::ios::out | std::ios::binary);
 			out.write(reinterpret_cast<const char*>(decompressed_block.data()), decompressed_block.size());
 			out.close();
