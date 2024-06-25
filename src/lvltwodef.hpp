@@ -149,3 +149,5 @@ typedef struct{
 } archive_file;
 
 constexpr size_t BZIP2_DECOMPRESS_BUFSIZE = 1000000;
+
+constexpr uint8_t MESSAGE_TYPE_31 = 31;

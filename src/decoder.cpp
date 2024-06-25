@@ -77,12 +77,42 @@ int Decoder::DecodeMessages(ArchiveFile &archive, archive_file &file){
 	}
 
 	// Parse messages until EOF
+	uint64_t message_qty = 0;
 	while(!archive.at_end()){
 		// Skip 12 bytes of zeros prepended to all messages (still don't get this)
 		if(!archive.ignore(12))
 			return 0; // I don't think this is an error atm (or even possible)
 		
-		// TODO: read in message header then switch on message type
+		uint32_t message_size;
+		uint16_t message_size_read;
+		uint8_t rda_channel, message_type;
+		if((archive.readIntegral(message_size_read)<2)
+			|| (archive.readIntegral(rda_channel)<1)
+			|| (archive.readIntegral(message_type)<1)
+			|| (!archive.ignore(8))){
+			std::cerr << "Error parsing message header: Message #" << message_qty << std::endl;
+			return -1;
+		}	
+
+		// Case where message size > 65535 halfwords 
+		if(message_size_read == 65535){
+			uint16_t most_sig_halfword, least_sig_halfword;
+			archive.readIntegral(most_sig_halfword);
+			archive.readIntegral(least_sig_halfword);
+			message_size = (most_sig_halfword << 16) | least_sig_halfword;
+		}
+		else
+			message_size = message_size_read*2; // multiply 2 for halfword->byte conversion
+
+		switch(message_type){
+			case MESSAGE_TYPE_31:
+				//...
+				break;
+			default:
+				std::cerr << "Message Type: " << message_type << " not handled (Message # " << message_qty 
+					<< ")" << std::endl;
+				break;
+		}
 
 	}
 
