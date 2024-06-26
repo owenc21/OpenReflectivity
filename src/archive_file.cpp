@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <string>
+#include <cstring>
 
 #include <zlib.h>
 #include <bzlib.h>
@@ -142,6 +143,16 @@ size_t Decoder::ArchiveFile::read(uint8_t* buffer, size_t size){
 
 size_t Decoder::ArchiveFile::read(char* buffer, size_t size){
 	return read(reinterpret_cast<uint8_t*>(buffer), size);
+}
+
+size_t Decoder::ArchiveFile::readFloat(float &buffer){
+	uint32_t raw;
+	size_t bytes_read = readIntegral(raw);
+	reverseEndian<uint32_t>(raw);
+	float val;
+	std::memcpy(&val, &raw, sizeof(raw));
+	buffer = val;
+	return bytes_read;
 }
 
 void Decoder::ArchiveFile::dump_to_file(const std::string &file_name){

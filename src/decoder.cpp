@@ -106,14 +106,130 @@ int Decoder::DecodeMessages(ArchiveFile &archive, archive_file &file){
 
 		switch(message_type){
 			case MESSAGE_TYPE_31:
-				//...
+			 	if(Decoder::Message31::ParseMessage31(archive, file) < 0) return -31;
 				break;
+
 			default:
 				std::cerr << "Message Type: " << message_type << " not handled (Message # " << message_qty 
 					<< ")" << std::endl;
 				break;
 		}
 
+	}
+
+	return 0;
+}
+
+int Decoder::Message31::ParseMessage31(ArchiveFile &archive, archive_file &file){
+	uint64_t begin_header_pos = archive.position();
+
+	/* Parse Message31 Header, ignoring fields not used currently*/
+	archive.ignore(10);
+	
+	uint16_t azimuth_num;
+	float azimuth_angle;
+	
+	archive.readIntegral(azimuth_num);
+	archive.readFloat(azimuth_angle);
+
+	archive.ignore(2);
+	uint32_t ptr_vol_const, ptr_elv_const, ptr_rad_const, ptr_ref_block, ptr_vel_block;
+	uint16_t radial_length, radial_length_nh, data_block_count;
+	uint8_t elevation_num;
+	float elevation_ang;
+
+	archive.readIntegral(radial_length);
+	archive.ignore(2);
+	archive.readIntegral(elevation_num);
+	archive.ignore(1);
+	archive.readFloat(elevation_ang);
+	archive.ignore(2);
+	archive.readIntegral(data_block_count);
+	archive.readIntegral(ptr_vol_const);
+	archive.readIntegral(ptr_elv_const);
+	archive.readIntegral(ptr_rad_const);
+	archive.readIntegral(ptr_ref_block);
+	// archive.readIntegral(ptr_vel_block);
+
+	if(file.scan_elevations[elevation_num]==nullptr)
+		file.scan_elevations[elevation_num] = std::make_shared<elevation_head>();
+	std::shared_ptr<elevation_head> elevation = file.scan_elevations[elevation_num];
+	elevation->elevation = elevation_ang;
+	elevation->elevation_num = elevation_num;
+
+	// Message 31 is one radial with many products... parse them
+	radial_data cur_radial;
+	cur_radial.azimuth = azimuth_angle;
+	cur_radial.azimuth_num = azimuth_num;
+	cur_radial.num_data_blocks = data_block_count;
+	cur_radial.ptr_vol_const = ptr_vol_const;
+	cur_radial.ptr_elv_const = ptr_elv_const;
+	cur_radial.ptr_rad_const = ptr_rad_const;
+	cur_radial.ptr_ref_block = ptr_ref_block;
+	Decoder::Message31::ParseRadial(archive, cur_radial, begin_header_pos);
+	elevation->radials.push_back(cur_radial);
+
+	return 0;
+}
+
+int Decoder::Message31::ParseRadial(ArchiveFile &archive, radial_data &cur_radial, uint64_t begin_header_pos){
+	/* Currently only parsing reflectivity! */
+
+	// REF
+	archive.seek(begin_header_pos+cur_radial.ptr_ref_block);
+	char type_name[5];
+	archive.read(type_name, 4);
+	type_name[4] = '\0';
+	if(std::string(type_name) != "DREF"){
+		std::cerr << "Unable to find \"DREF\" indicator in REF data block." << std::endl; 
+		return -1;
+	}
+
+	// Reserved
+	archive.ignore(4);
+
+	uint16_t num_gates, range_raw, interval_raw, tover_raw;
+	short snr_raw;
+	float range, interval, tover, snr;
+	archive.readIntegral(num_gates);
+	archive.readIntegral(range_raw);
+	archive.readIntegral(interval_raw);
+	archive.readIntegral(tover_raw);
+	archive.readIntegral(snr_raw);
+	// Scaled (unsigned) integers with 0.001 precision
+	range = ((float) range_raw) / 1000;
+	interval = ((float) interval_raw) / 1000;
+	tover = ((float) tover_raw) / 10; // 0.1 precision
+	snr = ((float) snr_raw) / 8; // 0.125 precision
+	archive.ignore(1); // control flags
+
+	uint8_t data_word_size;
+	float scale, offset;
+	archive.readIntegral(data_word_size);
+	if(data_word_size != 8){
+		std::cerr << "Improper moment word size for REF: (Expected: 8 but got: " << data_word_size << ")" << std::endl;
+		return -1;
+	}
+	archive.readFloat(scale);
+	archive.readFloat(offset);
+
+	cur_radial.ref = std::make_unique<radial>();
+	cur_radial.ref->moment = MomentType::REF;
+	cur_radial.ref->num_gates = num_gates;
+	cur_radial.ref->range = range;
+	cur_radial.ref->range_interval = interval;
+	cur_radial.ref->snr = snr;
+	cur_radial.ref->word_size = data_word_size;
+	cur_radial.ref->scale = scale;
+	cur_radial.ref->offset = offset;
+
+	/* Lambda for converting recorded REF to actual REF */
+	auto record_to_true = [scale, offset](uint8_t recorded) { return (((float)recorded) + offset) / scale; };
+	
+	uint8_t gate;
+	for(uint16_t i=0; i<num_gates; i++){
+		archive.readIntegral(gate);
+		cur_radial.ref->data.push_back(record_to_true(gate));
 	}
 
 	return 0;
@@ -140,6 +256,9 @@ int Decoder::DecodeArchive(const std::string &file_name, const bool &dump, archi
 	// Parse all messages remaining
 	if(Decoder::DecodeMessages(archive, file) < 0)
 		return -1;
+
+	// Initialize all elevation indices to null
+	file.scan_elevations.fill(nullptr);
 
 	if(!archive.at_end()){
 		std::cerr << "Unexpected non EOF. Decode attempt success unknown. Archive file may be corrupt." << std::endl;

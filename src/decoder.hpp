@@ -90,6 +90,13 @@ namespace Decoder
 		}
 
 		/**
+		 * @brief Reads floating point data into a float reference
+		 * @param buffer Reference to a float
+		 * @return Number of bytes read
+		 */
+		size_t readFloat(float &buffer);
+
+		/**
 		 * @brief Returns the entire buffer of data
 		 * @return Data buffer
 		*/
@@ -145,6 +152,12 @@ namespace Decoder
 		 * @returns Internal count of decomressed BZIP2 blocks
 		 */
 		uint16_t num_blocks(){ return blocks; }
+
+		/**
+		 * @brief Tells the position of the internal byte pointer
+		 * @returns Internal pointer position
+		 */
+		uint64_t position(){ return pointer; }
 	};
 
 	/**
@@ -200,5 +213,22 @@ namespace Decoder
 		return reverse_endian;
 	}
 
+	namespace Message31{	
+		/**
+		 * @brief Parses Message 31, starting from the message header, then moves
+		 * to constant block followed by radial blocks (only REF right now)
+		 * @param archive A reference to an ArchiveFile object to read from
+		 * @param file A reference to an archive_file struct to write decoded information to
+		 * @return Status of decode attempt. See documentation for reference (TBD)
+		 */
+		int ParseMessage31(ArchiveFile &archive, archive_file &file);
 
+		/**
+		 * @brief Parses the radial for all products (only REF right now)
+		 * @param archive A reference to an ArchiveFile object ot read from
+		 * @param cur_radial A reference to a radial_data object giving information about the current radial (and where to store pared information)
+		 * @param begin_header_pos The byte position of the beginning of the Message 31 (non-generic) header
+		 */
+		int ParseRadial(ArchiveFile &archive, radial_data &cur_radial, uint64_t begin_header_pos);
+	}
 }

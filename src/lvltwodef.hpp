@@ -63,7 +63,7 @@ typedef struct {
  * @member word_size
  * Member word_size is a bool indicating whether 8-bit (false) words are used for data or 16-bit (true)
  * @member data
- * Member data is a variant of vectors (uint8_t, uint16_t) that hold data moments, respecting sequential integrity
+ * Member data is a vector of floats corresponding to (sequentially) the gates (converted; true values) of the moment type
  */
 typedef struct {
 	MomentType moment;
@@ -75,7 +75,7 @@ typedef struct {
 	float scale;
 	float offset;
 	bool word_size;
-	std::variant<std::vector<uint8_t>, std::vector<uint16_t>> data;
+	std::vector<float> data;
 } radial;
 
 /**
@@ -145,7 +145,7 @@ typedef struct {
 typedef struct{
 	std::unique_ptr<volume_header> header;
 	std::unique_ptr<metadata_record> metadata;
-	std::array<std::unique_ptr<elevation_head>, 33> scan_elevations;
+	std::array<std::shared_ptr<elevation_head>, 33> scan_elevations;
 } archive_file;
 
 constexpr size_t BZIP2_DECOMPRESS_BUFSIZE = 1000000;
