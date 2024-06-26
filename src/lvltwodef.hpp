@@ -131,7 +131,7 @@ typedef struct {
 typedef struct {
 	float elevation;
 	uint8_t elevation_num;
-	std::vector<radial_data> radials;
+	std::vector<std::shared_ptr<radial_data>> radials;
 } elevation_head;
 
 /**

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <string>
 #include <cstring>
+#include <iomanip>
 
 #include <zlib.h>
 #include <bzlib.h>
@@ -161,6 +162,23 @@ void Decoder::ArchiveFile::dump_to_file(const std::string &file_name){
 	std::ofstream out(file_name, std::ios::out | std::ios::binary);
 	out.write(reinterpret_cast<const char*>(data_buffer.data()), data_buffer.size());
 	out.close();
+}
+
+void Decoder::ArchiveFile::peek(const uint64_t amt){
+	uint64_t pos_to_end = data.size() - pointer - 1;
+	uint64_t iter = (amt <= pos_to_end) ? amt : pos_to_end;
+
+	std::ios_base::fmtflags f( std::cout.flags() );
+	std::string ascii_rep;
+	for(uint64_t i=0; i<iter; i++){
+		uint8_t byte = data[pointer+i];
+		std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<uint16_t>(byte) << " ";
+		ascii_rep += (byte >= 32 && byte <= 126) ? static_cast<char>(byte) : '.';
+		ascii_rep += "  ";
+	}
+	std::cout << std::endl;
+	std::cout.flags( f );
+	std::cout << ascii_rep << std::endl;
 }
 
 Decoder::ArchiveFile::ArchiveFile(const std::string &file_name, const bool &gzip, const bool &bzip){

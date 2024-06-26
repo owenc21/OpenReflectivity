@@ -158,25 +158,25 @@ int Decoder::Message31::ParseMessage31(ArchiveFile &archive, archive_file &file)
 	elevation->elevation_num = elevation_num;
 
 	// Message 31 is one radial with many products... parse them
-	radial_data cur_radial;
-	cur_radial.azimuth = azimuth_angle;
-	cur_radial.azimuth_num = azimuth_num;
-	cur_radial.num_data_blocks = data_block_count;
-	cur_radial.ptr_vol_const = ptr_vol_const;
-	cur_radial.ptr_elv_const = ptr_elv_const;
-	cur_radial.ptr_rad_const = ptr_rad_const;
-	cur_radial.ptr_ref_block = ptr_ref_block;
+	std::shared_ptr<radial_data> cur_radial;
+	cur_radial->azimuth = azimuth_angle;
+	cur_radial->azimuth_num = azimuth_num;
+	cur_radial->num_data_blocks = data_block_count;
+	cur_radial->ptr_vol_const = ptr_vol_const;
+	cur_radial->ptr_elv_const = ptr_elv_const;
+	cur_radial->ptr_rad_const = ptr_rad_const;
+	cur_radial->ptr_ref_block = ptr_ref_block;
 	Decoder::Message31::ParseRadial(archive, cur_radial, begin_header_pos);
 	elevation->radials.push_back(cur_radial);
 
 	return 0;
 }
 
-int Decoder::Message31::ParseRadial(ArchiveFile &archive, radial_data &cur_radial, uint64_t begin_header_pos){
+int Decoder::Message31::ParseRadial(ArchiveFile &archive, std::shared_ptr<radial_data> &cur_radial, uint64_t begin_header_pos){
 	/* Currently only parsing reflectivity! */
 
 	// REF
-	archive.seek(begin_header_pos+cur_radial.ptr_ref_block);
+	archive.seek(begin_header_pos+cur_radial->ptr_ref_block);
 	char type_name[5];
 	archive.read(type_name, 4);
 	type_name[4] = '\0';
@@ -213,15 +213,15 @@ int Decoder::Message31::ParseRadial(ArchiveFile &archive, radial_data &cur_radia
 	archive.readFloat(scale);
 	archive.readFloat(offset);
 
-	cur_radial.ref = std::make_unique<radial>();
-	cur_radial.ref->moment = MomentType::REF;
-	cur_radial.ref->num_gates = num_gates;
-	cur_radial.ref->range = range;
-	cur_radial.ref->range_interval = interval;
-	cur_radial.ref->snr = snr;
-	cur_radial.ref->word_size = data_word_size;
-	cur_radial.ref->scale = scale;
-	cur_radial.ref->offset = offset;
+	cur_radial->ref = std::make_unique<radial>();
+	cur_radial->ref->moment = MomentType::REF;
+	cur_radial->ref->num_gates = num_gates;
+	cur_radial->ref->range = range;
+	cur_radial->ref->range_interval = interval;
+	cur_radial->ref->snr = snr;
+	cur_radial->ref->word_size = data_word_size;
+	cur_radial->ref->scale = scale;
+	cur_radial->ref->offset = offset;
 
 	/* Lambda for converting recorded REF to actual REF */
 	auto record_to_true = [scale, offset](uint8_t recorded) { return (((float)recorded) + offset) / scale; };
@@ -229,7 +229,7 @@ int Decoder::Message31::ParseRadial(ArchiveFile &archive, radial_data &cur_radia
 	uint8_t gate;
 	for(uint16_t i=0; i<num_gates; i++){
 		archive.readIntegral(gate);
-		cur_radial.ref->data.push_back(record_to_true(gate));
+		cur_radial->ref->data.push_back(record_to_true(gate));
 	}
 
 	return 0;
@@ -253,10 +253,11 @@ int Decoder::DecodeArchive(const std::string &file_name, const bool &dump, archi
 	if(Decoder::DecodeMetadata(archive, file.metadata))
 		return -1;
 
+	archive.peek(5);
+
 	// Parse all messages remaining
 	if(Decoder::DecodeMessages(archive, file) < 0)
 		return -1;
-
 	// Initialize all elevation indices to null
 	file.scan_elevations.fill(nullptr);
 

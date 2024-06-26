@@ -9,6 +9,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <memory>
 
 #include "lvltwodef.hpp"
 
@@ -18,6 +19,26 @@
 */
 namespace Decoder
 {
+	/**
+	 * @brief Reverses the endianness of an arbitrary integral type
+	 * @tparam T	The integral (not checked) datatype to reverse
+	 * @param data	Reference to the data for which the endianness should be reversed
+	 * @return	Copy of data with endianness reveresed	
+	*/
+	template <typename T>
+	T reverseEndian(const T& data){
+		size_t num_bytes = sizeof(T);
+
+		T reverse_endian = 0;
+		for(int i=0; i<num_bytes; i++){
+			reverse_endian |= ((data >> (8 * i)) & 0xFF) << (8 * (num_bytes - 1 - i));
+		}
+
+		if(num_bytes == 1) reverse_endian = data;
+
+		return reverse_endian;
+	}
+
 	/**
 	 * @class ArchiveFile
 	 * @brief A class that decompresses a level 2 archive file and acts as a stream for the uncompressed data
@@ -158,6 +179,12 @@ namespace Decoder
 		 * @returns Internal pointer position
 		 */
 		uint64_t position(){ return pointer; }
+
+		/**
+		 * @brief Prints out a given number of bytes starting from the internal position
+		 * @param amt The number of byte to print
+		 */
+		void peek(const uint64_t amt);
 	};
 
 	/**
@@ -193,26 +220,6 @@ namespace Decoder
 	 */
 	int DecodeMessages(ArchiveFile &archive, archive_file &file);
 
-	/**
-	 * @brief Reverses the endianness of an arbitrary integral type
-	 * @tparam T	The integral (not checked) datatype to reverse
-	 * @param data	Reference to the data for which the endianness should be reversed
-	 * @return	Copy of data with endianness reveresed	
-	*/
-	template <typename T>
-	T reverseEndian(const T& data){
-		size_t num_bytes = sizeof(T);
-
-		T reverse_endian = 0;
-		for(int i=0; i<num_bytes; i++){
-			reverse_endian |= ((data >> (8 * i)) & 0xFF) << (8 * (num_bytes - 1 - i));
-		}
-
-		if(num_bytes == 1) reverse_endian = data;
-
-		return reverse_endian;
-	}
-
 	namespace Message31{	
 		/**
 		 * @brief Parses Message 31, starting from the message header, then moves
@@ -229,6 +236,6 @@ namespace Decoder
 		 * @param cur_radial A reference to a radial_data object giving information about the current radial (and where to store pared information)
 		 * @param begin_header_pos The byte position of the beginning of the Message 31 (non-generic) header
 		 */
-		int ParseRadial(ArchiveFile &archive, radial_data &cur_radial, uint64_t begin_header_pos);
+		int ParseRadial(ArchiveFile &archive, std::shared_ptr<radial_data> &cur_radial, uint64_t begin_header_pos);
 	}
 }
