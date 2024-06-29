@@ -218,7 +218,7 @@ Decoder::ArchiveFile::ArchiveFile(const std::string &file_name, const bool &gzip
 			data.resize(data.size()-4);
 			data.insert(data.end(), decompressed_block.begin(), decompressed_block.end());
 			data.shrink_to_fit();
-			i += size;
+			i += (size-1);
 
 			std::string dump = "blocks/BLOCK_DUMP" + std::to_string(blocks);
 			std::ofstream out(dump, std::ios::out | std::ios::binary);

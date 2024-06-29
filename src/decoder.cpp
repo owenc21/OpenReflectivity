@@ -79,10 +79,12 @@ int Decoder::DecodeMessages(ArchiveFile &archive, archive_file &file){
 	// Parse messages until EOF
 	uint64_t message_qty = 0;
 	while(!archive.at_end()){
+		message_qty++;
 		// Skip 12 bytes of zeros prepended to all messages (still don't get this)
 		if(!archive.ignore(12))
 			return 0; // I don't think this is an error atm (or even possible)
 		
+		uint64_t message_start_pos = archive.position();
 		uint32_t message_size;
 		uint16_t message_size_read;
 		uint8_t rda_channel, message_type;
@@ -94,7 +96,7 @@ int Decoder::DecodeMessages(ArchiveFile &archive, archive_file &file){
 			return -1;
 		}	
 
-		// Case where message size > 65535 halfwords 
+		// Case where message size > 65534 halfwords 
 		if(message_size_read == 65535){
 			uint16_t most_sig_halfword, least_sig_halfword;
 			archive.readIntegral(most_sig_halfword);
@@ -102,7 +104,15 @@ int Decoder::DecodeMessages(ArchiveFile &archive, archive_file &file){
 			message_size = (most_sig_halfword << 16) | least_sig_halfword;
 		}
 		else
+		 	// When message size <= 65534 halfwords, messege seg fields both set to 1
 			message_size = message_size_read*2; // multiply 2 for halfword->byte conversion
+			// confirming
+			uint16_t message_seg1, message_seg2;
+			archive.readIntegral(message_seg1);
+			archive.readIntegral(message_seg2);
+			if(!(message_seg1 == 1 && message_seg2 == 1)){
+				std::cerr << "Message with less than 65534 halfwords has improper message segment fields." << std::endl;
+			}
 
 		switch(message_type){
 			case MESSAGE_TYPE_31:
@@ -110,11 +120,12 @@ int Decoder::DecodeMessages(ArchiveFile &archive, archive_file &file){
 				break;
 
 			default:
-				std::cerr << "Message Type: " << message_type << " not handled (Message # " << message_qty 
+				std::cerr << "Message Type: " << static_cast<int>(message_type) << " not handled (Message # " << message_qty 
 					<< ")" << std::endl;
 				break;
 		}
 
+		archive.seek(message_start_pos+message_size);
 	}
 
 	return 0;
@@ -158,7 +169,7 @@ int Decoder::Message31::ParseMessage31(ArchiveFile &archive, archive_file &file)
 	elevation->elevation_num = elevation_num;
 
 	// Message 31 is one radial with many products... parse them
-	std::shared_ptr<radial_data> cur_radial;
+	std::shared_ptr<radial_data> cur_radial = std::make_shared<radial_data>();
 	cur_radial->azimuth = azimuth_angle;
 	cur_radial->azimuth_num = azimuth_num;
 	cur_radial->num_data_blocks = data_block_count;
@@ -250,19 +261,18 @@ int Decoder::DecodeArchive(const std::string &file_name, const bool &dump, archi
 
 	// "Parse" metadata record
 	file.metadata = std::make_unique<metadata_record>();
-	if(Decoder::DecodeMetadata(archive, file.metadata))
+	if(Decoder::DecodeMetadata(archive, file.metadata) < 0)
 		return -1;
 
-	archive.peek(5);
+	// Initialize all elevation indices to null
+	file.scan_elevations.fill(nullptr);
 
 	// Parse all messages remaining
 	if(Decoder::DecodeMessages(archive, file) < 0)
 		return -1;
-	// Initialize all elevation indices to null
-	file.scan_elevations.fill(nullptr);
 
 	if(!archive.at_end()){
-		std::cerr << "Unexpected non EOF. Decode attempt success unknown. Archive file may be corrupt." << std::endl;
+		std::cerr << "Unexpected non-EOF. Decode attempt success unknown. Archive file may be corrupt." << std::endl;
 		return -2;
 	}
 
