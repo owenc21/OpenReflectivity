@@ -120,8 +120,9 @@ int Decoder::DecodeMessages(ArchiveFile &archive, archive_file &file){
 				break;
 
 			default:
-				std::cerr << "Message Type: " << static_cast<int>(message_type) << " not handled (Message # " << message_qty 
-					<< ")" << std::endl;
+			 	// unsupported message
+				// std::cerr << "Message Type: " << static_cast<int>(message_type) << " not handled (Message # " << message_qty 
+					// << ")" << std::endl;
 				break;
 		}
 
@@ -240,7 +241,14 @@ int Decoder::Message31::ParseRadial(ArchiveFile &archive, std::shared_ptr<radial
 	uint8_t gate;
 	for(uint16_t i=0; i<num_gates; i++){
 		archive.readIntegral(gate);
-		cur_radial->ref->data.push_back(record_to_true(gate));
+		// 0 is below snr, 1 is range folding
+		(!(gate == 0 || gate == 1)) ? cur_radial->ref->data.push_back(record_to_true(gate)) : cur_radial->ref->data.push_back(0);
+	}
+
+	if(num_gates != cur_radial->ref->data.size()){
+		std::cerr << "Discrepancy between number of expected gates (" << num_gates
+			<< ") and number of recorded gates(" << cur_radial->ref->data.size() << ")" << std::endl;
+		return -1;
 	}
 
 	return 0;
