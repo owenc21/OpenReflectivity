@@ -21,8 +21,10 @@ add_library(open_reflectivity_decoder
 find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
+find_package(GLEW REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(BZip2 REQUIRED)
+find_package(glm REQUIRED)
 
 target_include_directories(open_reflectivity_decoder PUBLIC
   ${PROJECT_SOURCE_DIR}/include
@@ -32,10 +34,14 @@ target_include_directories(open_reflectivity_decoder PUBLIC
 )
 
 add_executable(OpenReflectivity src/main.cpp)
+target_include_directories(OpenReflectivity PUBLIC
+  ${GLM_INCLUDE_DIRS}
+)
 target_link_libraries(OpenReflectivity PRIVATE
   open_reflectivity_decoder
+  ${GLEW_LIBRARIES}
   ${GLFW_LIBRARIES}
-  ${OPENGL_gl_LIBRARY}
+  ${OPENGL_LIBRARIES}
   ${ZLIB_LIBRARIES}
   ${BZIP2_LIBRARIES}
 )
